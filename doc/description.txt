@@ -1,0 +1,17 @@
+ApkSave
+==========
+
+Short
+------
+
+Save your smartphone applications to your Download directory.
+
+
+Description
+-----------
+
+It was developed as part of the PDOS (Public Domain Operating System) project by a global team of developers.
+
+For more information about the PDOS project, visit the website https://www.pdos.org
+
+
