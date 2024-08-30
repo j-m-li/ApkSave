@@ -114,7 +114,9 @@ Java_com_cod5_apksave_MainActivity_exec(
 	jstring pwd,
 	jstring arg1,
 	jstring arg2,
-	jstring arg3
+	jstring arg3,
+	jstring arg4,
+	jstring arg5
 ) {
     jstring ret;
     int link[2];
@@ -128,10 +130,15 @@ Java_com_cod5_apksave_MainActivity_exec(
     char *narg1 = (char *) (*env)->GetStringUTFChars(env, arg1, 0);
     char *narg2 = (char *) (*env)->GetStringUTFChars(env, arg2, 0);
     char *narg3 = (char *) (*env)->GetStringUTFChars(env, arg3, 0);
+    char *narg4 = (char *) (*env)->GetStringUTFChars(env, arg4, 0);
+    char *narg5 = (char *) (*env)->GetStringUTFChars(env, arg5, 0);
+
     char *nnarg1 = narg1[0] ? narg1 : NULL;
     char *nnarg2 = narg2[0] ? narg2 : NULL;
     char *nnarg3 = narg3[0] ? narg3 : NULL;
-    char *arg[] = {ncmd, nnarg1, nnarg2, nnarg3, 0};
+    char *nnarg4 = narg4[0] ? narg4 : NULL;
+    char *nnarg5 = narg5[0] ? narg5 : NULL;
+    char *arg[] = {ncmd, nnarg1, nnarg2, nnarg3, nnarg4, nnarg5,0};
 
     mkdir(npwd, 0777);
     if (pipe(link) == -1) {
@@ -140,6 +147,8 @@ Java_com_cod5_apksave_MainActivity_exec(
 	(*env)->ReleaseStringUTFChars(env, arg1, narg1);
 	(*env)->ReleaseStringUTFChars(env, arg2, narg2);
 	(*env)->ReleaseStringUTFChars(env, arg3, narg3);
+	(*env)->ReleaseStringUTFChars(env, arg4, narg4);
+	(*env)->ReleaseStringUTFChars(env, arg5, narg5);
 	return (*env)->NewStringUTF(env, "pipe failed");
     }
 
@@ -149,6 +158,8 @@ Java_com_cod5_apksave_MainActivity_exec(
 	(*env)->ReleaseStringUTFChars(env, arg1, narg1);
 	(*env)->ReleaseStringUTFChars(env, arg2, narg2);
 	(*env)->ReleaseStringUTFChars(env, arg3, narg3);
+	(*env)->ReleaseStringUTFChars(env, arg4, narg4);
+	(*env)->ReleaseStringUTFChars(env, arg5, narg5);
 	return (*env)->NewStringUTF(env, "fork failed");
     }
     if (pid == 0) {
@@ -193,6 +204,8 @@ Java_com_cod5_apksave_MainActivity_exec(
     (*env)->ReleaseStringUTFChars(env, arg1, narg1);
     (*env)->ReleaseStringUTFChars(env, arg2, narg2);
     (*env)->ReleaseStringUTFChars(env, arg3, narg3);
+    (*env)->ReleaseStringUTFChars(env, arg4, narg4);
+    (*env)->ReleaseStringUTFChars(env, arg5, narg5);
     ret =  (*env)->NewStringUTF(env, buf);
     free(buf);
     return ret;

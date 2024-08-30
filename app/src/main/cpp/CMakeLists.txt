@@ -42,6 +42,7 @@ add_executable(
         hwzip/implode.c
         hwzip/lz77.c
         hwzip/reduce.c
+        hwzip/sha1.c
         hwzip/shrink.c
         hwzip/tables.c
         hwzip/zip.c

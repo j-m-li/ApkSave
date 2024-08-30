@@ -80,17 +80,15 @@ public class MainActivity extends AppCompatActivity {
 
         List<ApplicationInfo> packages = pm.getInstalledApplications(PackageManager.GET_META_DATA);
         int i = 0;
-        for (ApplicationInfo packageInfo : packages) {
-            RadioButton r;
-            r = new RadioButton(this);
-            r.setText(packageInfo.sourceDir);
-            r.setId(i);
-            binding.radio.addView(r, i);
-            i++;
-
-            //Log.d(TAG, "Installed package :" + packageInfo.packageName);
-            //Log.d(TAG, "Source dir : " + packageInfo.sourceDir);
-            //Log.d(TAG, "Launch Activity :" + pm.getLaunchIntentForPackage(packageInfo.packageName));
+        for (ApplicationInfo pi : packages) {
+            if ((pi.flags & ApplicationInfo.FLAG_SYSTEM) == 0) {
+                RadioButton r;
+                r = new RadioButton(this);
+                r.setText(pi.sourceDir);
+                r.setId(i);
+                binding.radio.addView(r, i);
+                i++;
+            }
         }
 
         binding.passwd.setText(d.getAbsolutePath() + "/out/");
@@ -170,9 +168,9 @@ public class MainActivity extends AppCompatActivity {
                 if (id >= 0) {
                     binding.sampleText.setText(R.string.start);
                     RadioButton rdb = binding.radio.findViewById(id);
-                    //binding.sampleText.setText(runCommand(binding.passwd.getText().toString(), "hwzip", rdb.getText().toString()));
+                    binding.sampleText.setText(runCommand(binding.passwd.getText().toString(), "hwzip", rdb.getText().toString()));
                     //if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                        File cert = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + rdb.getText().toString().substring(rdb.getText().toString().lastIndexOf("/")));
+          /*              File cert = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/" + rdb.getText().toString().substring(rdb.getText().toString().lastIndexOf("/")));
                         Log.d("SignV2:", cert.getPath() + " " + binding.passwd.getText().toString() + rdb.getText().toString());
                         if (true || !cert.exists()) {
                             in = new FileInputStream(rdb.getText().toString());
@@ -184,6 +182,8 @@ public class MainActivity extends AppCompatActivity {
                             copyFile(in, out);
                             out.close();
                         }
+
+           */
                     //} else {
                       //  File cert = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + "/certificate.jks");
                        // Log.d("Sign(v1):", cert.getPath() + " " + binding.passwd.getText().toString() + " " + rdb.getText().toString());
@@ -254,7 +254,9 @@ public class MainActivity extends AppCompatActivity {
 
                 try {
                     //binding.passwd.setText(expath + "/lib" + "hwzip" + ".so");
-                    txt = exec(expath + "/lib" + "hwzip" + ".so", workingDir, "extract", src, "");
+                    txt = exec(expath + "/lib" + "hwzip" + ".so", workingDir, "extract", src, "", "", "");
+                    txt = exec(expath + "/lib" + "hwzip" + ".so", workingDir, "create", "../extracted.apk", "-m", "store", ".") + txt;
+
                 } catch (Exception e) {
                     txt = "Error 5674";
                 }
@@ -276,5 +278,7 @@ public class MainActivity extends AppCompatActivity {
                               String pwd,
                               String arg1,
                               String arg2,
-                              String arg3);
+                              String arg3,
+                              String arg4,
+                              String arg5);
 }

@@ -125,7 +125,7 @@ static void expand_folders(const char *name, char **file_names, uint16_t *n)
 	        if (l >= sizeof(fldr) -1) {
 		    return;
 	        }
-	        memcpy(fldr,  name, l);
+	        memcpy(fldr,  name, l + 1);
    		if(fldr[l-1] == '/') {
 			l--;
     		}
@@ -141,16 +141,17 @@ static void expand_folders(const char *name, char **file_names, uint16_t *n)
 		        continue;
 		}
 	    	if (l) {
-			fldr[l + 1] = '/';
+			fldr[l] = '/';
 			memcpy(fldr + l + 1,  entry, le + 1);
 	    	} else {
 			memcpy(fldr + l,  entry, le + 1);
 	    	}
 		if (entry[le - 1] == '/') {
+
 	    		expand_folders(fldr, file_names, n);
 		} else {
 			if (*n < MAX_FILES) {
-				file_names[*n] = strdup(fldr);
+			    file_names[*n] = strdup(fldr);
 				(*n)++;
 			}
 		}
@@ -351,9 +352,11 @@ static void create_zip(const char *zip_filename, const char *comment,
 
 	file_names = xmalloc(sizeof(file_names[0]) * MAX_FILES);
 	file_n = 0;
+
 	for (i = 0; i < n; i++) {
 		expand_folders(filenames[i], file_names, &file_n);
 	}
+
 	if (file_n >= MAX_FILES) {
         	printf("too many files!\n");
                 exit(1);
@@ -369,7 +372,9 @@ static void create_zip(const char *zip_filename, const char *comment,
                         printf("%s is too large!\n", file_names[i]);
                         exit(1);
                 }
-                file_sizes[i] = (uint32_t)file_size;
+
+
+	    file_sizes[i] = (uint32_t)file_size;
                 mtimes[i] = mtime;
         }
 

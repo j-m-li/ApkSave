@@ -4,6 +4,8 @@
 #include "zip.h"
 
 #include <string.h>
+#include <stdio.h>
+#include <malloc.h>
 #include "bits.h"
 #include "crc32.h"
 #include "deflate.h"
@@ -548,20 +550,24 @@ uint32_t zip_write(uint8_t *dst, uint16_t num_memb,
         struct lfh lfh;
         bool ok;
         uint16_t name_len;
+    	uint16_t extra_len;
         uint8_t *data_dst;
         size_t data_dst_sz, comp_sz;
         uint32_t lfh_offset, cd_offset, eocdr_offset;
 
         p = dst;
-
+    	lfh_offset = 0;
         /* Write Local File Headers and compressed or stored data. */
         for (i = 0; i < num_memb; i++) {
                 assert(filenames[i] != NULL);
                 assert(strlen(filenames[i]) <= UINT16_MAX);
                 name_len = (uint16_t)strlen(filenames[i]);
 
+
                 data_dst = p + LFH_BASE_SZ + name_len;
                 data_dst_sz = (file_sizes[i] > 0) ? file_sizes[i] - 1 : 0;
+	    	extra_len = 0;
+	    	lfh_offset = data_dst - dst;
 
                 if (method == ZIP_SHRINK && file_sizes[i] > 0 &&
                     hwshrink(file_data[i], file_sizes[i],
@@ -599,6 +605,20 @@ uint32_t zip_write(uint8_t *dst, uint16_t num_memb,
                         lfh.gp_flag = (0x1 << 1);
                         lfh.extract_ver = (0 << 8) | 20; /* DOS | PKZip 2.0 */
                 } else {
+		    	/* use this to align APK to 4 byte and 16kB for dynamic libraries .so*/
+		   	if (name_len > 2 && filenames[i][name_len-1] == 'o'
+					    && filenames[i][name_len-2] == 's'
+					       && filenames[i][name_len-3] == '.')
+			{
+			    if (lfh_offset & 16383) {
+				extra_len = 16384 - (lfh_offset & 16383);
+			    }
+			} else {
+			    if (lfh_offset & 3) {
+				extra_len = 4 - (lfh_offset & 3);
+			    }
+			}
+		    	data_dst += extra_len;
                         memcpy(data_dst, file_data[i], file_sizes[i]);
                         lfh.method = ZIP_STORE;
                         lfh.comp_size = file_sizes[i];
@@ -610,14 +630,22 @@ uint32_t zip_write(uint8_t *dst, uint16_t num_memb,
                         callback(filenames[i], lfh.method,
                                  file_sizes[i], lfh.comp_size);
                 }
-
-                ctime2dos(mtimes[i], &lfh.mod_date, &lfh.mod_time);
+	        ctime2dos(mtimes[i], &lfh.mod_date, &lfh.mod_time);
                 lfh.crc32 = crc32(file_data[i], file_sizes[i]);
                 lfh.uncomp_size = file_sizes[i];
                 lfh.name_len = name_len;
-                lfh.extra_len = 0;
+                lfh.extra_len = extra_len;
+		if (lfh.extra_len) {
+		    lfh.extra = malloc(extra_len);
+		    memset(lfh.extra, 0, extra_len);
+		}
                 lfh.name = (const uint8_t*)filenames[i];
-                p += write_lfh(p, &lfh);
+
+	    	p += write_lfh(p, &lfh);
+	    	fflush(stdout);
+	    	if (lfh.extra_len) {
+			free(lfh.extra);
+	    	}
                 p += lfh.comp_size;
         }
 
@@ -627,7 +655,10 @@ uint32_t zip_write(uint8_t *dst, uint16_t num_memb,
         /* Write the Central Directory based on the Local File Headers. */
         lfh_offset = 0;
         for (i = 0; i < num_memb; i++) {
-                ok = read_lfh(&lfh, dst, SIZE_MAX, lfh_offset);
+	    printf("%d jkhkj\n", i);
+	    fflush(stdout);
+
+	    ok = read_lfh(&lfh, dst, SIZE_MAX, lfh_offset);
                 assert(ok);
                 (void)ok;
 
@@ -641,16 +672,16 @@ uint32_t zip_write(uint8_t *dst, uint16_t num_memb,
                 cfh.comp_size = lfh.comp_size;
                 cfh.uncomp_size = lfh.uncomp_size;
                 cfh.name_len = lfh.name_len;
-                cfh.extra_len = 0;
+                cfh.extra_len = lfh.extra_len;
                 cfh.comment_len = 0;
                 cfh.disk_nbr_start = 0;
                 cfh.int_attrs = 0;
                 cfh.ext_attrs = EXT_ATTR_ARC;
                 cfh.lfh_offset = lfh_offset;
                 cfh.name = lfh.name;
+		cfh.extra = lfh.extra;
                 p += write_cfh(p, &cfh);
-
-                lfh_offset += LFH_BASE_SZ + lfh.name_len + lfh.comp_size;
+                lfh_offset += LFH_BASE_SZ + lfh.name_len + lfh.extra_len + lfh.comp_size;
         }
 
         assert((size_t)(p - dst) <= UINT32_MAX);
@@ -693,7 +724,15 @@ uint32_t zip_max_size(uint16_t num_memb, const char *const *filenames,
                 if (name_len > UINT16_MAX) {
                         return 0;
                 }
-
+		if (name_len > 2
+			&& filenames[i][name_len-1] == 'o'
+			   && filenames[i][name_len-2] == 's'
+			      && filenames[i][name_len-3] == '.')
+		{
+		    total += 16383 * 2; /* for alignment */
+		} else {
+		    total += 3 * 2;
+		}
                 total += CFH_BASE_SZ + name_len; /* Central File Header */
                 total += LFH_BASE_SZ + name_len; /* Local File Header */
                 total += file_sizes[i];          /* Uncompressed data size. */

@@ -13,6 +13,8 @@
          that other apps created. -->
     <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
 
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission"/>
+
     <!-- If your app doesn't need to access media files that other apps created,
          set the "maxSdkVersion" attribute to "28" instead. -->
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"
